@@ -57,6 +57,19 @@
         #res-talent { background: #151515; padding: 25px; border-left: 4px solid var(--point-red); text-align: left; font-size: 1rem; }
 
         #red-flash { position:fixed; top:0; left:0; width:100%; height:100%; background:red; opacity:0; pointer-events:none; z-index:9999; }
+@keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-5px, 5px); filter: hue-rotate(90deg); }
+            40% { transform: translate(5px, -5px); filter: invert(1); }
+            60% { transform: translate(-5px, -2px); }
+            80% { transform: translate(5px, 2px); filter: hue-rotate(-90deg); }
+            100% { transform: translate(0); }
+        }
+        .glitch-active {
+            animation: glitch 0.2s infinite; 
+        }
+    </style>
+        
     </style>
 </head>
 <body>
@@ -94,6 +107,7 @@
 </div>
 
 <audio id="g-sound" src="./bgm/710557__kevp888__cd_vie_008fx_gong_2.wav" preload="auto"></audio>
+<audio id="admin-sound" src="./bgm/44808__erh__shtwv-min-5-noiz-4.wav" preload="auto"></audio>
 
 <script>
     let userName = "";
@@ -127,22 +141,32 @@
     };
 
 function startQuiz() {
-    userName = document.getElementById('user-name').value.trim();
-    if (!userName) { alert("성함을 기입해 주십시오."); return; }
+        userName = document.getElementById('user-name').value.trim();
+        if (!userName) { alert("성함을 기입해 주십시오."); return; }
 
-    // --- [관리자 즉시 통과 로직] ---
-    if (userName === "고쇼 시치미" || userName === "사토 사카린") {
+        // 관리자 패스 로직 시작
+        if (userName === "고쇼 시치미" || userName === "사토 사카린") {
+            alert("⚠️ [WARNING] 관리자 권한이 감지되었습니다. 모든 검사 절차를 무시하고 상급 권한으로 접속합니다.");
+            
+            const adminSound = document.getElementById('admin-sound');
+            if(adminSound) adminSound.play();
+
+            document.body.classList.add('glitch-active');
+
+            setTimeout(() => {
+                document.body.classList.remove('glitch-active');
+                document.getElementById('step-name').classList.add('hidden');
+                showResult(); 
+            }, 500); 
+            
+            return;
+        }
+        // 관리자 패스 로직 끝
+
         document.getElementById('step-name').classList.add('hidden');
-        // 질문 단계를 건너뛰고 바로 결과 화면으로 이동
-        showResult(); 
-        return; // 아래의 일반 퀴즈 시작 로직을 실행하지 않음
+        document.getElementById('step-quiz').classList.remove('hidden');
+        showQuestion();
     }
-    // ----------------------------
-
-    document.getElementById('step-name').classList.add('hidden');
-    document.getElementById('step-quiz').classList.remove('hidden');
-    showQuestion();
-}
 
     function showQuestion() {
         if (currentIdx >= questions.length) { showResult(); return; }
@@ -235,4 +259,5 @@ function startQuiz() {
 </script>
 </body>
 </html>
+
 
