@@ -6,8 +6,8 @@
     <style>
         :root {
             --bg-color: #121212;
-            --point-red: #8b0000; /* 눈이 편안한 다크 레드 */
-            --soft-white: #e0e0e0; /* 부드러운 미색 */
+            --point-red: #8b0000;
+            --soft-white: #e0e0e0;
             --dark-gray: #1e1e1e;
             --text-gray: #b0b0b0;
         }
@@ -32,7 +32,6 @@
 
         h1 { color: var(--point-red); font-size: 1.6rem; letter-spacing: 3px; margin-bottom: 30px; }
 
-        /* 입력창 디자인 */
         input[type="text"] {
             width: 85%; padding: 15px; margin-bottom: 25px;
             background: #252525; border: 1px solid #333;
@@ -41,7 +40,6 @@
         }
         input[type="text"]:focus { border-color: var(--point-red); }
 
-        /* 버튼 디자인 */
         button {
             padding: 15px 35px; background: none;
             border: 1px solid var(--point-red); color: var(--point-red);
@@ -54,12 +52,10 @@
         .options-grid { display: grid; gap: 12px; }
         .hidden { display: none; }
         
-        /* 결과 화면 디자인 */
         .type-tag { display: inline-block; padding: 6px 18px; background: var(--point-red); color: white; border-radius: 4px; font-size: 1rem; margin-bottom: 20px; font-weight: bold; }
         #res-desc { line-height: 1.8; margin-bottom: 30px; color: #ccc; }
         #res-talent { background: #151515; padding: 25px; border-left: 4px solid var(--point-red); text-align: left; font-size: 1rem; }
 
-        /* 붉은 섬광 효과 */
         #red-flash { position:fixed; top:0; left:0; width:100%; height:100%; background:red; opacity:0; pointer-events:none; z-index:9999; }
     </style>
 </head>
@@ -158,12 +154,41 @@
     function showResult() {
         document.getElementById('step-quiz').classList.add('hidden');
         document.getElementById('step-result').classList.remove('hidden');
+
+        const resTitle = document.getElementById('res-title');
+        const resNameInfo = document.getElementById('res-name-info');
+        const resDesc = document.getElementById('res-desc');
+        const resTalentText = document.getElementById('res-talent-text');
+        const resTypeTag = document.getElementById('res-type-tag');
+
+        // --- [히든 코드 시작] ---
+        if (userName === "고쇼 시치미" || userName === "사토 사카린") { 
+            resTypeTag.innerText = "ADMINISTRATOR";
+            resTypeTag.style.background = "#000";
+            resTitle.innerText = "학생회 권한 식별됨";
+            resTitle.style.color = "#ff0000";
+            resNameInfo.innerText = `관리자 [${userName}]의 접속을 확인했습니다.`;
+            
+            if (userName === "고쇼 시치미") {
+                resDesc.innerText = "선별을 진행하십시오. 당신의 미각은 곧 학교의 법입니다. 모든 과실의 본질을 핥아 그 가치를 증명하십시오.";
+                resTalentText.innerText = "본질 미각 판별, 거짓말 탐지, 영혼의 농도 측정";
+            } else if (userName === "사토 사카린") {
+                resDesc.innerText = "판별을 시작하십시오. 당신의 손끝에 닿는 모든 것은 도구로서의 가치가 매겨집니다. 부적격자는 즉시 으깨버리십시오.";
+                resTalentText.innerText = "물리적 인재 판별, 품질 측정, 파괴 권한 집행";
+            }
+
+            document.getElementById('btn-accept').innerText = "권한 승인";
+            return;
+        }
+        // --- [히든 코드 끝] ---
+
         const winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
         const res = results[winner];
-        document.getElementById('res-type-tag').innerText = res.title;
-        document.getElementById('res-name-info').innerText = `${userName} 학생에게 부여된 용도입니다.`;
-        document.getElementById('res-desc').innerText = res.desc;
-        document.getElementById('res-talent-text').innerText = res.talent;
+
+        resTypeTag.innerText = res.title;
+        resNameInfo.innerText = `${userName} 학생에게 부여된 용도입니다.`;
+        resDesc.innerText = res.desc;
+        resTalentText.innerText = res.talent;
     }
 
     function evade(btn) {
@@ -175,18 +200,24 @@
     }
 
     function forceAccept() {
-        alert("거부할 수 없는 운명입니다.");
+        alert("당신의 운명을 직시하세요.");
         acceptFate();
     }
 
     function acceptFate() {
         const sound = document.getElementById('g-sound');
         const flash = document.getElementById('red-flash');
-        if(sound) sound.play();
+        
+        if(sound) {
+            sound.play().catch(e => console.log("소리 재생 실패"));
+        }
+
         flash.style.opacity = '0.6';
         setTimeout(() => { flash.style.opacity = '0'; }, 150);
+        
         document.getElementById('btn-accept').style.display = 'none';
         document.getElementById('btn-deny').style.display = 'none';
+
         document.getElementById('res-title').innerText = "기록 완료";
         document.getElementById('res-title').style.color = "#ff0000";
         document.getElementById('res-name-info').innerText = "야타가라스께서 당신을 식별했습니다. 도망칠 곳은 없습니다.";
