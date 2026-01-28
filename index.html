@@ -126,13 +126,23 @@
         D: { title: "숙성형", desc: "당신은 겉으로 드러나지 않지만 안으로 깊은 향을 품은 과실입니다. 타인의 마음속 깊은 곳을 건드리는 직관력이 뛰어납니다.", talent: "프로파일러, 상담가, 뛰어난 위장 연기력, 타인의 감정 변화를 예리하게 파악하여 대응하기" }
     };
 
-    function startQuiz() {
-        userName = document.getElementById('user-name').value.trim();
-        if (!userName) { alert("성함을 기입해 주십시오."); return; }
+function startQuiz() {
+    userName = document.getElementById('user-name').value.trim();
+    if (!userName) { alert("성함을 기입해 주십시오."); return; }
+
+    // --- [관리자 즉시 통과 로직] ---
+    if (userName === "고쇼 시치미" || userName === "사토 사카린") {
         document.getElementById('step-name').classList.add('hidden');
-        document.getElementById('step-quiz').classList.remove('hidden');
-        showQuestion();
+        // 질문 단계를 건너뛰고 바로 결과 화면으로 이동
+        showResult(); 
+        return; // 아래의 일반 퀴즈 시작 로직을 실행하지 않음
     }
+    // ----------------------------
+
+    document.getElementById('step-name').classList.add('hidden');
+    document.getElementById('step-quiz').classList.remove('hidden');
+    showQuestion();
+}
 
     function showQuestion() {
         if (currentIdx >= questions.length) { showResult(); return; }
@@ -225,3 +235,4 @@
 </script>
 </body>
 </html>
+
