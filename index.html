@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>쿠다모노카 고교 적성 검사</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --point-red: #8b0000; /* 눈이 편안한 다크 레드 */
+            --soft-white: #e0e0e0; /* 부드러운 미색 */
+            --dark-gray: #1e1e1e;
+            --text-gray: #b0b0b0;
+        }
+
+        body { 
+            background: var(--bg-color); 
+            color: var(--soft-white); 
+            font-family: 'Pretendard', 'Malgun Gothic', serif; 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; margin: 0; overflow-x: hidden;
+        }
+
+        #main-card { 
+            width: 90%; max-width: 550px; 
+            background: var(--dark-gray); 
+            padding: 50px 40px; border-radius: 12px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            border-top: 5px solid var(--point-red);
+            text-align: center;
+            position: relative;
+        }
+
+        h1 { color: var(--point-red); font-size: 1.6rem; letter-spacing: 3px; margin-bottom: 30px; }
+
+        /* 입력창 디자인 */
+        input[type="text"] {
+            width: 85%; padding: 15px; margin-bottom: 25px;
+            background: #252525; border: 1px solid #333;
+            color: var(--soft-white); border-radius: 6px; outline: none;
+            transition: border 0.3s; text-align: center; font-size: 1rem;
+        }
+        input[type="text"]:focus { border-color: var(--point-red); }
+
+        /* 버튼 디자인 */
+        button {
+            padding: 15px 35px; background: none;
+            border: 1px solid var(--point-red); color: var(--point-red);
+            cursor: pointer; font-size: 1.1rem; transition: all 0.3s;
+            border-radius: 6px; margin: 10px; font-weight: bold;
+        }
+        button:hover { background: var(--point-red); color: var(--soft-white); }
+
+        .question { font-size: 1.3rem; margin-bottom: 35px; line-height: 1.7; color: var(--soft-white); }
+        .options-grid { display: grid; gap: 12px; }
+        .hidden { display: none; }
+        
+        /* 결과 화면 디자인 */
+        .type-tag { display: inline-block; padding: 6px 18px; background: var(--point-red); color: white; border-radius: 4px; font-size: 1rem; margin-bottom: 20px; font-weight: bold; }
+        #res-desc { line-height: 1.8; margin-bottom: 30px; color: #ccc; }
+        #res-talent { background: #151515; padding: 25px; border-left: 4px solid var(--point-red); text-align: left; font-size: 1rem; }
+
+        /* 붉은 섬광 효과 */
+        #red-flash { position:fixed; top:0; left:0; width:100%; height:100%; background:red; opacity:0; pointer-events:none; z-index:9999; }
+    </style>
+</head>
+<body>
+
+<div id="red-flash"></div>
+
+<div id="main-card">
+    <div id="step-name">
+        <h1>[ 학생 식별 절차 ]</h1>
+        <p style="color: var(--text-gray); margin-bottom: 25px;">바구니에 담기기 전, 당신의 성함을 기입하십시오.</p>
+        <input type="text" id="user-name" placeholder="성함을 입력하세요" maxlength="12">
+        <br>
+        <button type="button" onclick="startQuiz()">검사 시작</button>
+    </div>
+
+    <div id="step-quiz" class="hidden">
+        <div id="progress" style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">1 / 16</div>
+        <div class="question" id="q-text"></div>
+        <div class="options-grid" id="q-options"></div>
+    </div>
+
+    <div id="step-result" class="hidden">
+        <div class="type-tag" id="res-type-tag">타입 확인 중</div>
+        <h2 id="res-title" style="margin-top: 0; color: var(--soft-white);">분류 완료</h2>
+        <p id="res-name-info" style="color: var(--text-gray); margin-bottom: 25px;"></p>
+        <div id="res-desc"></div>
+        <div id="res-talent">
+            <strong style="color: var(--point-red);">당신에게 기대되는 용도</strong><br>
+            <span id="res-talent-text" style="color: #bbb; display: block; margin-top: 10px;"></span>
+        </div>
+        <br>
+        <button type="button" id="btn-accept" onclick="acceptFate()">당신의 운명을 받아들이겠습니까?</button>
+        <button type="button" id="btn-deny" onmouseover="evade(this)" onclick="forceAccept()">처음으로 돌아가기</button>
+    </div>
+</div>
+
+<audio id="g-sound" src="./bgm/710557__kevp888__cd_vie_008fx_gong_2.wav" preload="auto"></audio>
+
+<script>
+    let userName = "";
+    let currentIdx = 0;
+    let scores = { A: 0, B: 0, C: 0, D: 0 };
+
+    const questions = [
+        { q: "낯선 방에 갇혔을 때, 당신의 첫 행동은?", a: ["방 한가운데서 크게 소리쳐 도움을 청한다", "방의 구조와 탈출 가능성을 치밀하게 분석한다", "문 뒤나 구석에 몸을 숨기고 상황을 살핀다", "방 안에 남겨진 누군가의 흔적을 통해 의도를 파악한다"] },
+        { q: "당신이 생각하는 가장 가치 있는 능력은?", a: ["타인의 마음을 움직이는 카리스마", "무엇이든 해결할 수 있는 명석한 두뇌", "어떤 공격에도 버티는 강인한 신체", "상대의 본질을 꿰뚫어 보는 통찰력"] },
+        { q: "누군가 당신을 비난한다면?", a: ["더 당당하게 행동해 그들의 입을 막는다", "논리적으로 반박하여 상대의 오류를 지적한다", "침묵하며 상대의 공격이 지나가길 기다린다", "비난하는 상대의 약점을 조용히 수집한다"] },
+        { q: "숲속에서 길을 잃었을 때, 당신의 선택은?", a: ["높은 곳에 올라가 불을 피워 위치를 알린다", "나침반과 지도를 이용해 최단 경로를 찾는다", "안전한 동굴을 찾아 밤이 지나길 기다린다", "나무의 이끼와 바람의 냄새로 길을 직감한다"] },
+        { q: "시험 공부를 할 때 당신의 스타일은?", a: ["모두가 주목할 만한 완벽한 결과물을 만든다", "가장 효율적인 암기법과 요약본을 설계한다", "교과서를 통째로 외워 빈틈을 없앤다", "출제자의 의도를 파악해 핵심만 공략한다"] },
+        { q: "팀 프로젝트에서 당신의 역할은?", a: ["팀원들을 격려하고 발표를 전담하는 리더", "일정을 관리하고 자료를 정리하는 전략가", "묵묵히 맡은 바를 완수하는 든든한 조력자", "팀 내 갈등을 중재하고 분위기를 읽는 관찰자"] },
+        { q: "재난 상황 속 당신은 어떤 인물입니까?", a: ["모두를 이끌고 탈출을 주도하는 주인공", "기계를 수리하거나 지도를 해독하는 기술자", "마지막까지 살아남는 끈질긴 생존자", "등장인물 사이의 배신을 먼저 알아채는 조력자"] },
+        { q: "당신이 선호하는 색깔은 무엇입니까?", a: ["눈에 띄는 화려하고 밝은 색", "차분하고 지적인 느낌의 차가운 색", "안정감을 주는 무채색이나 어두운 색", "깊이감이 있고 묘한 분위기의 중간색"] },
+        { q: "거짓말을 해야 할 상황이 온다면?", a: ["표정 하나 안 변하고 당당하게 말한다", "사실에 기반한 교묘한 왜곡으로 속인다", "말수를 줄여 들킬 틈을 주지 않는다", "상대가 듣고 싶어 하는 말을 해준다"] },
+        { q: "싸움이 일어났을 때 당신의 대응은?", a: ["정면으로 맞서서 기선제압을 한다", "상대의 약점을 파악해 효율적으로 공격한다", "일단 방어하며 상대가 지치기를 기다린다", "싸움이 일어나기 전 심리를 건드려 포기하게 만든다"] },
+        { q: "미래에 대한 당신의 생각은 어떻습니까?", a: ["내가 빛날 수 있는 무대를 꿈꾼다", "철저한 계획으로 완벽한 미래를 설계한다", "어떤 변화에도 흔들리지 않는 기반을 다진다", "흐름에 몸을 맡기며 본능적인 선택을 믿는다"] },
+        { q: "친구를 위로할 때 당신은 보통?", a: ["멋진 말로 기운을 북돋아 준다", "문제를 해결할 실질적인 방안을 제시한다", "옆에서 묵묵히 들어주며 자리를 지킨다", "친구가 말하지 않은 슬픔까지 읽어내 공감한다"] },
+        { q: "새로운 기술을 배울 때의 태도는?", a: ["남들에게 보여주기 좋은 기술부터 배운다", "작동 원리와 구조부터 완벽히 이해한다", "기초부터 탄탄하게 반복 숙달한다", "이 기술이 어디에 쓰일지 직관적으로 파악한다"] },
+        { q: "당신이 가장 선호하는 보상은?", a: ["모두의 박수와 명예", "효율적인 시스템과 권한", "변하지 않는 안전과 자산", "타인의 신뢰와 깊은 유대"] },
+        { q: "비밀을 알게 되었을 때 당신은?", a: ["필요할 때 터뜨려 존재감을 과시한다", "기록해두고 전략적으로 활용한다", "무덤까지 가져갈 정도로 철저히 숨긴다", "그 비밀을 통해 상대를 조종하거나 유도한다"] },
+        { q: "자신을 한 단어로 표현한다면?", a: ["화려하게 피어나는 꽃", "정교하게 맞물린 기계", "무너지지 않는 견고한 방패", "시간이 흐를수록 깊어지는 술"] }
+    ];
+
+    const results = {
+        A: { title: "개화형", desc: "당신은 누군가의 시선이 닿을 때 비로소 완성되는 과실입니다. 무대 위에서 가장 빛나며 사람들을 홀리는 매력이 있습니다.", talent: "아이돌, 연설가, 분위기를 활기차게 띄우는 재능, 타인의 장점을 발견하여 칭찬하기" },
+        B: { title: "비대형", desc: "감정보다 논리가 앞서는 당신은 완벽한 알맹이를 지향합니다. 복잡한 문제를 단순하게 정리하는 데 탁월한 능력이 있습니다.", talent: "전략가, 해커, 복잡한 기계의 고장 원인 분석, 개인 스케줄이나 장부를 꼼꼼히 정리하기" },
+        C: { title: "방어형", desc: "당신은 폭풍우 속에서도 껍질을 단단히 닫고 버티는 생존자입니다. 주변의 변화에 쉽게 흔들리지 않는 굳건함이 무기입니다.", talent: "생존전문가, 경호원, 주변의 청결과 정리정돈 유지하기, 소란스러운 환경에서도 집중력 발휘하기" },
+        D: { title: "숙성형", desc: "당신은 겉으로 드러나지 않지만 안으로 깊은 향을 품은 과실입니다. 타인의 마음속 깊은 곳을 건드리는 직관력이 뛰어납니다.", talent: "프로파일러, 상담가, 뛰어난 위장 연기력, 타인의 감정 변화를 예리하게 파악하여 대응하기" }
+    };
+
+    function startQuiz() {
+        userName = document.getElementById('user-name').value.trim();
+        if (!userName) { alert("성함을 기입해 주십시오."); return; }
+        document.getElementById('step-name').classList.add('hidden');
+        document.getElementById('step-quiz').classList.remove('hidden');
+        showQuestion();
+    }
+
+    function showQuestion() {
+        if (currentIdx >= questions.length) { showResult(); return; }
+        const q = questions[currentIdx];
+        document.getElementById('progress').innerText = `${currentIdx + 1} / ${questions.length}`;
+        document.getElementById('q-text').innerText = q.q;
+        
+        const optionsDiv = document.getElementById('q-options');
+        optionsDiv.innerHTML = '';
+        ['A','B','C','D'].forEach((type, i) => {
+            const btn = document.createElement('button');
+            btn.type = "button";
+            btn.innerText = q.a[i];
+            btn.onclick = () => { scores[type]++; currentIdx++; showQuestion(); };
+            optionsDiv.appendChild(btn);
+        });
+    }
+
+    function showResult() {
+        document.getElementById('step-quiz').classList.add('hidden');
+        document.getElementById('step-result').classList.remove('hidden');
+        const winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+        const res = results[winner];
+        document.getElementById('res-type-tag').innerText = res.title;
+        document.getElementById('res-name-info').innerText = `${userName} 학생에게 부여된 용도입니다.`;
+        document.getElementById('res-desc').innerText = res.desc;
+        document.getElementById('res-talent-text').innerText = res.talent;
+    }
+
+    function evade(btn) {
+        btn.style.position = 'fixed';
+        const x = Math.random() * (window.innerWidth - btn.clientWidth);
+        const y = Math.random() * (window.innerHeight - btn.clientHeight);
+        btn.style.left = x + 'px';
+        btn.style.top = y + 'px';
+    }
+
+    function forceAccept() {
+        alert("거부할 수 없는 운명입니다.");
+        acceptFate();
+    }
+
+    function acceptFate() {
+        const sound = document.getElementById('g-sound');
+        const flash = document.getElementById('red-flash');
+        if(sound) sound.play();
+        flash.style.opacity = '0.6';
+        setTimeout(() => { flash.style.opacity = '0'; }, 150);
+        document.getElementById('btn-accept').style.display = 'none';
+        document.getElementById('btn-deny').style.display = 'none';
+        document.getElementById('res-title').innerText = "기록 완료";
+        document.getElementById('res-title').style.color = "#ff0000";
+        document.getElementById('res-name-info').innerText = "야타가라스께서 당신을 식별했습니다. 도망칠 곳은 없습니다.";
+    }
+</script>
+</body>
+</html>
